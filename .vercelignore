@@ -1,0 +1,6 @@
+.venv_python/
+.git/
+__pycache__/
+*.pyc
+.gemini/
+*.log
