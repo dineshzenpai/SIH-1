@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07110d" />
+    <title>SENTINEL-X | Identity Screening Console</title>
+    <style>
+      :root {
+        --bg: #050906;
+        --panel: rgba(10, 22, 16, 0.86);
+        --panel-strong: #0a1710;
+        --line: rgba(119, 255, 173, 0.17);
+        --line-bright: rgba(119, 255, 173, 0.46);
+        --ink: #e9fff0;
+        --muted: #8ba595;
+        --green: #79f7a8;
+        --green-hot: #c8ff7d;
+        --cyan: #67e5ff;
+        --amber: #ffca6a;
+        --red: #ff6d77;
+        --shadow: 0 16px 45px rgba(0, 0, 0, 0.28);
+      }
+
+      * { box-sizing: border-box; }
+      html { scroll-behavior: smooth; }
+      body {
+        min-width: 320px;
+        margin: 0;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 83% -10%, rgba(46, 173, 114, 0.18), transparent 29rem),
+          radial-gradient(circle at 10% 45%, rgba(50, 143, 164, 0.1), transparent 25rem),
+          var(--bg);
+        font-family: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+        line-height: 1.45;
+        overflow-x: hidden;
+      }
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.32;
+        z-index: 20;
+        background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px);
+        background-size: 100% 4px;
+        mix-blend-mode: soft-light;
+      }
+      button, input { font: inherit; }
+      button { cursor: pointer; }
+      .shell { width: min(1440px, calc(100% - 40px)); margin: 0 auto; }
+
+      .topline {
+        color: #9ed2ae;
+        background: #0a1710;
+        border-bottom: 1px solid var(--line);
+        font-size: 11px;
+        letter-spacing: .08em;
+      }
+      .topline .shell { min-height: 35px; display: flex; align-items: center; justify-content: space-between; gap: 15px; }
+      .secure { color: var(--green); display: inline-flex; align-items: center; gap: 8px; }
+      .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green); box-shadow: 0 0 12px var(--green); animation: pulse 1.8s infinite; }
+      @keyframes pulse { 50% { opacity: .3; transform: scale(.7); } }
+
+      nav { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: 28px; border-bottom: 1px solid var(--line); }
+      .brand { display: flex; align-items: center; gap: 12px; color: var(--ink); text-decoration: none; font-weight: 800; letter-spacing: .13em; }
+      .brand-mark { width: 37px; height: 37px; display: grid; place-items: center; color: #061008; background: var(--green); box-shadow: 0 0 20px rgba(121, 247, 168, .24); clip-path: polygon(50% 0, 92% 22%, 92% 72%, 50% 100%, 8% 72%, 8% 22%); }
+      .brand small { display: block; color: var(--muted); font-size: 8px; font-weight: 500; letter-spacing: .22em; }
+      .nav-links { display: flex; gap: 23px; align-items: center; }
+      .nav-links a { color: var(--muted); text-decoration: none; font-size: 12px; }
+      .nav-links a:hover { color: var(--green); }
+      .nav-status { color: var(--green); border: 1px solid var(--line-bright); background: rgba(121,247,168,.06); padding: 8px 12px; font-size: 10px; letter-spacing: .1em; }
+
+      .hero { min-height: 290px; padding: 66px 0 44px; display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(270px, .65fr); gap: 48px; align-items: center; position: relative; }
+      .eyebrow { color: var(--green); letter-spacing: .14em; font-size: 11px; font-weight: 700; }
+      h1 { margin: 12px 0 14px; font-size: clamp(33px, 5vw, 68px); letter-spacing: -.075em; line-height: .98; max-width: 850px; }
+      h1 span { color: var(--green); }
+      .lede { color: #adc4b4; max-width: 680px; font-size: 15px; }
+      .hero-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 11px; }
+      .metric { padding: 16px; border: 1px solid var(--line); background: rgba(13, 31, 20, .65); box-shadow: var(--shadow); }
+      .metric b { display: block; color: var(--green-hot); font-size: 25px; letter-spacing: -.07em; }
+      .metric span { color: var(--muted); display: block; margin-top: 5px; font-size: 10px; letter-spacing: .06em; }
+
+      .command-strip { display: flex; gap: 10px; align-items: center; border: 1px solid var(--line-bright); border-left: 3px solid var(--green); background: rgba(121, 247, 168, .04); padding: 11px 14px; color: #b3d8bd; font-size: 11px; }
+      .command-strip strong { color: var(--green); }
+      .command-strip .cursor { color: var(--green-hot); animation: blink 1s steps(2) infinite; }
+      @keyframes blink { 50% { opacity: 0; } }
+
+      main { padding: 22px 0 65px; }
+      .workspace { display: grid; grid-template-columns: minmax(280px, .92fr) minmax(0, 1.45fr) minmax(240px, .75fr); gap: 16px; margin-top: 16px; }
+      .panel { background: linear-gradient(145deg, rgba(14, 30, 20, .9), rgba(6, 14, 9, .92)); border: 1px solid var(--line); box-shadow: var(--shadow); min-width: 0; }
+      .panel-title { height: 45px; padding: 0 15px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border-bottom: 1px solid var(--line); font-size: 11px; letter-spacing: .1em; }
+      .panel-title span { color: var(--muted); font-size: 9px; }
+      .side-body { padding: 15px; }
+
+      .upload-zone { min-height: 218px; padding: 20px; border: 1px dashed rgba(121,247,168,.45); background: linear-gradient(135deg, rgba(121,247,168,.07), transparent 55%); display: grid; place-items: center; text-align: center; transition: .2s ease; }
+      .upload-zone.drag { border-color: var(--green-hot); background: rgba(121,247,168,.13); transform: translateY(-2px); }
+      .upload-icon { width: 45px; height: 45px; margin: 0 auto 11px; display: grid; place-items: center; font-size: 21px; color: var(--green); border: 1px solid var(--line-bright); }
+      .upload-zone p { margin: 0; font-size: 12px; }
+      .upload-zone small { color: var(--muted); display: block; margin: 8px 0 15px; font-size: 10px; }
+      .btn { border: 1px solid var(--line-bright); color: var(--ink); padding: 10px 13px; background: #0e2516; font-size: 10px; letter-spacing: .08em; transition: .18s ease; }
+      .btn:hover { border-color: var(--green); color: var(--green); transform: translateY(-1px); }
+      .btn.primary { background: var(--green); color: #071008; border-color: var(--green); font-weight: 800; }
+      .btn.primary:hover { color: #071008; background: var(--green-hot); }
+      .btn:disabled { opacity: .42; cursor: not-allowed; transform: none; }
+      #fileInput { display: none; }
+      .actions { display: grid; gap: 9px; margin-top: 13px; }
+      .actions .btn { width: 100%; }
+      .session-note { color: var(--muted); margin: 15px 0 0; padding-top: 13px; border-top: 1px solid var(--line); font-size: 9px; line-height: 1.6; }
+      .session-note b { color: var(--cyan); }
+
+      .scanner { position: relative; min-height: 540px; display: flex; flex-direction: column; overflow: hidden; }
+      .scanner-canvas { position: relative; flex: 1; min-height: 330px; display: grid; place-items: center; overflow: hidden; background: #061008; }
+      .scanner-canvas::before { content: ""; position: absolute; inset: 0; opacity: .36; background-image: linear-gradient(90deg, rgba(121,247,168,.07) 1px, transparent 1px), linear-gradient(rgba(121,247,168,.07) 1px, transparent 1px); background-size: 30px 30px; }
+      .scanner-canvas::after { content: ""; position: absolute; inset: 12px; border: 1px solid rgba(121,247,168,.23); pointer-events: none; }
+      .corner { position: absolute; width: 19px; height: 19px; z-index: 3; border-color: var(--green); opacity: .9; }
+      .corner.tl { top: 12px; left: 12px; border-top: 2px solid; border-left: 2px solid; }
+      .corner.tr { top: 12px; right: 12px; border-top: 2px solid; border-right: 2px solid; }
+      .corner.bl { bottom: 12px; left: 12px; border-bottom: 2px solid; border-left: 2px solid; }
+      .corner.br { bottom: 12px; right: 12px; border-bottom: 2px solid; border-right: 2px solid; }
+      .scan-line { position: absolute; left: 13px; right: 13px; height: 2px; top: 18%; opacity: 0; background: var(--green-hot); box-shadow: 0 0 18px var(--green), 0 0 40px var(--green); z-index: 4; }
+      .scanning .scan-line { opacity: 1; animation: scan 1.9s ease-in-out infinite; }
+      @keyframes scan { 0%, 100% { top: 15%; } 50% { top: 85%; } }
+      .doc-preview { position: relative; z-index: 1; width: min(78%, 490px); aspect-ratio: 1.58; overflow: hidden; background: linear-gradient(125deg, #d4d6c4, #899a89); color: #15211b; box-shadow: 0 22px 45px rgba(0,0,0,.4); transform: rotate(-1.4deg); }
+      .doc-preview.has-image { background: #111; }
+      #docImage { width: 100%; height: 100%; object-fit: cover; display: none; }
+      .doc-preview.has-image #docImage { display: block; }
+      .demo-card { height: 100%; padding: 7.5% 7%; background: linear-gradient(115deg, rgba(255,255,255,.7), transparent 40%), repeating-linear-gradient(0deg, transparent 0 14px, rgba(20,47,32,.05) 14px 15px); }
+      .has-image .demo-card { display: none; }
+      .demo-top { display: flex; justify-content: space-between; align-items: start; color: #1d5140; font-size: clamp(6px, 1vw, 11px); font-weight: 800; letter-spacing: .13em; }
+      .demo-chip { width: 16%; aspect-ratio: 1.45; margin: 9% 0 4%; border: 1px solid #5f7e6b; background: repeating-linear-gradient(90deg, #d0bd74 0 2px, #7e966f 2px 4px); }
+      .demo-info { display: grid; grid-template-columns: 26% 1fr; gap: 5%; align-items: end; }
+      .face-box { aspect-ratio: .78; position: relative; overflow: hidden; background: linear-gradient(#9fb5ba 40%, #586f76 40%); border: 2px solid rgba(18,81,57,.5); }
+      .face-box::before { content: ""; position: absolute; width: 43%; aspect-ratio: 1; border-radius: 50%; background: #cf9a74; top: 14%; left: 29%; box-shadow: 0 37px 0 14px #273d58; }
+      .face-box::after { content: ""; position: absolute; inset: 5%; border: 1px solid rgba(98,255,167,.75); }
+      .fake-lines { display: grid; gap: 8px; padding-bottom: 4%; }
+      .fake-lines i { height: 7px; display: block; background: #607b68; opacity: .8; }
+      .fake-lines i:nth-child(1) { width: 77%; } .fake-lines i:nth-child(2) { width: 58%; } .fake-lines i:nth-child(3) { width: 86%; } .fake-lines i:nth-child(4) { width: 69%; }
+      .mrz { position: absolute; bottom: 5%; left: 7%; right: 7%; font-size: clamp(5px, .85vw, 10px); line-height: 1.2; letter-spacing: .08em; overflow: hidden; white-space: nowrap; }
+      .tag { position: absolute; z-index: 5; padding: 5px 7px; color: #0b180f; background: var(--green); font-size: 9px; font-weight: 800; letter-spacing: .08em; }
+      .tag.one { top: 24px; left: 24px; } .tag.two { right: 24px; bottom: 24px; background: var(--cyan); }
+      .detect-box { display: none; position: absolute; z-index: 4; border: 1px solid var(--green); background: rgba(121,247,168,.04); }
+      .detect-box::after { content: attr(data-label); position: absolute; left: -1px; top: -19px; padding: 3px 5px; color: #061008; background: var(--green); font-size: 8px; white-space: nowrap; }
+      .detect-box.photo { left: 22%; top: 31%; width: 20%; height: 37%; }
+      .detect-box.text { left: 47%; top: 42%; width: 28%; height: 17%; }
+      .analyzed .detect-box { display: block; }
+      .hud-footer { padding: 12px 15px; display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9px; letter-spacing: .05em; }
+      .hud-footer b { color: var(--green); }
+
+      .confidence { padding: 18px 15px 13px; text-align: center; }
+      .ring { --value: 28; width: 137px; aspect-ratio: 1; display: grid; place-items: center; border-radius: 50%; margin: 0 auto 12px; background: radial-gradient(circle at center, var(--panel-strong) 57%, transparent 58%), conic-gradient(var(--green) calc(var(--value) * 1%), rgba(121,247,168,.12) 0); box-shadow: inset 0 0 24px rgba(121,247,168,.11), 0 0 20px rgba(121,247,168,.04); }
+      .ring-inner b { display: block; font-size: 31px; letter-spacing: -.1em; }
+      .ring-inner span { color: var(--muted); font-size: 8px; letter-spacing: .12em; }
+      .verdict { color: var(--amber); font-size: 11px; letter-spacing: .12em; }
+      .score-caption { color: var(--muted); font-size: 9px; }
+      .checks { margin: 0; padding: 0; list-style: none; border-top: 1px solid var(--line); }
+      .checks li { display: flex; justify-content: space-between; gap: 8px; padding: 11px 15px; border-bottom: 1px solid var(--line); font-size: 10px; }
+      .checks small { color: var(--muted); font-size: 9px; }
+      .state { color: var(--muted); font-size: 9px; font-weight: 700; letter-spacing: .05em; }
+      .state.pass { color: var(--green); } .state.warn { color: var(--amber); } .state.fail { color: var(--red); }
+      .mini-chart { padding: 15px; }
+      .bars { height: 72px; display: flex; align-items: end; gap: 5px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+      .bars i { flex: 1; min-width: 3px; background: linear-gradient(to top, var(--green), var(--cyan)); opacity: .4; transition: height .6s ease; }
+      .chart-label { display: flex; justify-content: space-between; margin-top: 8px; color: var(--muted); font-size: 8px; }
+
+      .lower-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 16px; margin-top: 16px; }
+      .terminal { padding: 14px 15px; min-height: 206px; color: #b8d9c1; font-size: 10px; line-height: 1.82; }
+      .terminal p { margin: 0; opacity: 0; transform: translateY(4px); animation: terminalIn .2s forwards; }
+      .terminal .command { color: var(--green); } .terminal .ok { color: var(--cyan); } .terminal .warn { color: var(--amber); }
+      @keyframes terminalIn { to { opacity: 1; transform: none; } }
+      .field-grid { padding: 15px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .field { border-left: 2px solid var(--line-bright); padding: 4px 0 4px 10px; }
+      .field span { display: block; color: var(--muted); font-size: 8px; letter-spacing: .1em; }
+      .field b { display: block; margin-top: 4px; color: #ddf5e3; font-size: 11px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; }
+
+      .intel { margin-top: 44px; }
+      .section-head { display: flex; align-items: end; justify-content: space-between; gap: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+      .section-head h2 { margin: 4px 0 0; font-size: 24px; letter-spacing: -.06em; }
+      .section-head p { margin: 0; color: var(--muted); max-width: 540px; font-size: 11px; }
+      .modules { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 15px; }
+      .module { min-height: 180px; padding: 17px; background: rgba(12, 27, 18, .56); border: 1px solid var(--line); position: relative; overflow: hidden; }
+      .module::before { content: attr(data-index); position: absolute; right: 10px; top: 4px; color: rgba(121,247,168,.10); font-size: 57px; font-weight: 800; letter-spacing: -.15em; }
+      .module .mod-icon { color: var(--green); font-size: 19px; }
+      .module h3 { position: relative; margin: 13px 0 7px; font-size: 12px; letter-spacing: .04em; }
+      .module p { position: relative; color: var(--muted); margin: 0; font-size: 10px; }
+      .module .tech { position: relative; display: block; margin-top: 14px; color: var(--cyan); font-size: 8px; letter-spacing: .07em; }
+      .protocol { margin-top: 44px; }
+      .protocol-grid { display: grid; grid-template-columns: 1.2fr .8fr; gap: 16px; margin-top: 15px; }
+      .flow-panel, .decision-panel { padding: 18px; background: rgba(12, 27, 18, .56); border: 1px solid var(--line); }
+      .flow-panel > p, .decision-panel > p { margin: 6px 0 0; color: var(--muted); font-size: 10px; }
+      .flow { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 18px; }
+      .flow-step { min-height: 108px; padding: 12px; border: 1px solid rgba(119,255,173,.18); background: rgba(3, 10, 6, .31); position: relative; }
+      .flow-step:not(:last-child)::after { content: "→"; position: absolute; right: -13px; top: 42px; z-index: 2; color: var(--green); font-size: 18px; }
+      .flow-step b { display: block; color: var(--green); font-size: 9px; letter-spacing: .12em; }
+      .flow-step span { display: block; margin-top: 9px; color: #c8dfcf; font-size: 10px; }
+      .tiers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 18px; }
+      .tier { min-height: 112px; padding: 13px; border-left: 3px solid var(--green); background: rgba(3, 10, 6, .31); }
+      .tier.yellow { border-color: var(--amber); } .tier.red { border-color: var(--red); }
+      .tier b { display: block; color: var(--green); font-size: 11px; letter-spacing: .1em; }
+      .tier.yellow b { color: var(--amber); } .tier.red b { color: var(--red); }
+      .tier span { display: block; margin-top: 9px; color: var(--muted); font-size: 9px; }
+      .prototype-note { margin-top: 16px; padding: 12px 14px; border: 1px solid rgba(103,229,255,.25); background: rgba(103,229,255,.045); color: #b7dce4; font-size: 10px; }
+      .prototype-note strong { color: var(--cyan); }
+      footer { display: flex; justify-content: space-between; gap: 16px; padding: 25px 0; color: var(--muted); border-top: 1px solid var(--line); font-size: 9px; }
+      footer strong { color: var(--green); }
+
+      @media (max-width: 1040px) { .workspace { grid-template-columns: minmax(250px,.8fr) minmax(0,1.3fr); } .result-panel { grid-column: span 2; } .modules { grid-template-columns: repeat(2, 1fr); } .protocol-grid { grid-template-columns: 1fr; } }
+      @media (max-width: 720px) { .shell { width: min(100% - 24px, 1440px); } .topline .shell { font-size: 8px; } nav { min-height: 65px; } .nav-links, .nav-status { display: none; } .hero { padding: 42px 0 31px; grid-template-columns: 1fr; gap: 28px; } .workspace, .lower-grid { grid-template-columns: 1fr; } .result-panel { grid-column: auto; } .scanner { min-height: 470px; } .scanner-canvas { min-height: 290px; } .modules, .flow, .tiers { grid-template-columns: 1fr; } .flow-step:not(:last-child)::after { right: 12px; top: auto; bottom: -17px; transform: rotate(90deg); } .section-head { display: block; } .section-head p { margin-top: 10px; } footer { display: block; } footer span { display: block; margin-top: 6px; } }
+    </style>
+  </head>
+  <body>
+    <div class="topline">
+      <div class="shell"><span class="secure"><i class="pulse"></i> SECURE LOCAL SESSION // NO DATA RETAINED</span><span id="clock">UTC+05:30 — --:--:--</span></div>
+    </div>
+    <header class="shell">
+      <nav>
+        <a class="brand" href="#top" aria-label="Sentinel X home"><span class="brand-mark">✦</span><span>SENTINEL-X<small>IDENTITY FORENSICS</small></span></a>
+        <div class="nav-links"><a href="#console">Console</a><a href="#intelligence">Detection stack</a><a href="#protocol">Protocol</a><a href="#about">About</a></div>
+        <div class="nav-status">● ENGINE ONLINE</div>
+      </nav>
+    </header>
+
+    <div class="shell" id="top">
+      <section class="hero">
+        <div>
+          <div class="eyebrow">// AI-ASSISTED DOCUMENT INTEGRITY</div>
+          <h1>Know the <span>document.</span><br />Trust the decision.</h1>
+          <p class="lede">A single-screen screening console for identity documents, visual tamper signals, and 1:1 biometric review. Built for a fast human-in-the-loop decision.</p>
+        </div>
+        <div class="hero-metrics" aria-label="System metrics">
+          <div class="metric"><b>04</b><span>ANALYSIS VECTORS</span></div>
+          <div class="metric"><b>&lt; 4s</b><span>DEMO DECISION TIME</span></div>
+          <div class="metric"><b>1:1</b><span>BIOMETRIC REVIEW</span></div>
+          <div class="metric"><b>100%</b><span>LOCAL BROWSER FLOW</span></div>
+        </div>
+      </section>
+      <div class="command-strip"><strong>root@sentinel:~$</strong><span id="commandText">awaiting document payload</span><span class="cursor">█</span></div>
+    </div>
+
+    <main class="shell" id="console">
+      <section class="workspace" aria-label="Identity screening workspace">
+        <aside class="panel">
+          <div class="panel-title">01 / ACQUIRE EVIDENCE <span>INPUT BUFFER</span></div>
+          <div class="side-body">
+            <label class="upload-zone" id="dropZone" for="fileInput">
+              <div>
+                <div class="upload-icon">⇧</div>
+                <p>DROP IDENTITY DOCUMENT</p>
+                <small>JPG, PNG, WEBP · processed only in this browser</small>
+                <span class="btn">SELECT FILE</span>
+              </div>
+            </label>
+            <input id="fileInput" type="file" accept="image/png,image/jpeg,image/webp" />
+            <div class="actions">
+              <button class="btn primary" id="sampleButton">RUN SAMPLE SCAN</button>
+              <button class="btn" id="clearButton">RESET SESSION</button>
+              <button class="btn" id="saveButton" disabled>SAVE AUDIT TO DATABASE</button>
+              <button class="btn" id="exportButton" disabled>EXPORT AUDIT JSON</button>
+            </div>
+            <p class="session-note"><b>PRIVACY LOCK:</b> identity images remain on this device. Saving an audit sends only non-identifying scan metadata to the configured database; a trained officer remains the final authority.</p>
+          </div>
+        </aside>
+
+        <section class="panel scanner" id="scannerPanel">
+          <div class="panel-title">02 / FORENSIC VIEWPORT <span id="sourceLabel">DEMO_CREDENTIAL.TD3</span></div>
+          <div class="scanner-canvas" id="scanCanvas">
+            <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><span class="scan-line"></span>
+            <span class="tag one" id="inputTag">INPUT: SAMPLE</span><span class="tag two" id="resolutionTag">VECTOR: IDLE</span>
+            <div class="doc-preview" id="docPreview">
+              <img id="docImage" alt="Uploaded identity document preview" />
+              <div class="demo-card">
+                <div class="demo-top"><span>REPUBLIC OF INDIA</span><span>IDENTITY CARD</span></div>
+                <div class="demo-chip"></div>
+                <div class="demo-info"><div class="face-box"></div><div class="fake-lines"><i></i><i></i><i></i><i></i></div></div>
+                <div class="mrz">IDINDDEMO&lt;&lt;SENTINEL&lt;&lt;USER&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;<br />X00133742IND9605157M3104261&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;02</div>
+              </div>
+            </div>
+            <span class="detect-box photo" data-label="FACE REGION / 98.6%"></span>
+            <span class="detect-box text" data-label="TEXT CLUSTER / OCR"></span>
+          </div>
+          <div class="hud-footer"><span>SESSION <b id="sessionId">SNTL-0000</b></span><span id="hudState">READY / STANDBY</span><span>OPERATOR: <b>LOCAL</b></span></div>
+        </section>
+
+        <aside class="panel result-panel">
+          <div class="panel-title">03 / RISK SIGNAL <span>COMPOSITE</span></div>
+          <div class="confidence">
+            <div class="ring" id="ring"><div class="ring-inner"><b id="score">--</b><span>TRUST SCORE</span></div></div>
+            <div class="verdict" id="verdict">AWAITING SCAN</div>
+            <p class="score-caption" id="scoreCaption">No evidence package loaded.</p>
+          </div>
+          <ul class="checks">
+            <li><span>OCR field structure<br /><small>entities + format</small></span><b class="state" id="ocrState">IDLE</b></li>
+            <li><span>MRZ / checksum integrity<br /><small>ICAO-style validation</small></span><b class="state" id="mrzState">IDLE</b></li>
+            <li><span>Visual tamper residue<br /><small>compression + edge signal</small></span><b class="state" id="elaState">IDLE</b></li>
+            <li><span>Face-region consistency<br /><small>1:1 review cue</small></span><b class="state" id="faceState">IDLE</b></li>
+          </ul>
+          <div class="mini-chart">
+            <div class="bars" id="bars"></div>
+            <div class="chart-label"><span>NOISE RESIDUAL</span><span id="chartState">NO SIGNAL</span></div>
+          </div>
+        </aside>
+      </section>
+
+      <section class="lower-grid">
+        <section class="panel">
+          <div class="panel-title">LIVE EVENT STREAM <span>FORENSIC LOG</span></div>
+          <div class="terminal" id="terminal" aria-live="polite">
+            <p><span class="command">[SYS]</span> SENTINEL-X forensic console initialized.</p>
+            <p><span class="ok">[OK]</span> Local analysis sandbox is ready.</p>
+            <p><span class="warn">[WAIT]</span> Upload a document or launch the sample scan.</p>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-title">EXTRACTED EVIDENCE <span>FIELD MAP</span></div>
+          <div class="field-grid">
+            <div class="field"><span>DOCUMENT TYPE</span><b id="docType">—</b></div>
+            <div class="field"><span>IMAGE PROFILE</span><b id="imageProfile">—</b></div>
+            <div class="field"><span>CHECKSUM</span><b id="checksum">—</b></div>
+            <div class="field"><span>ANOMALY INDEX</span><b id="anomaly">—</b></div>
+            <div class="field"><span>FACE REGION</span><b id="faceRegion">—</b></div>
+            <div class="field"><span>REVIEW MODE</span><b id="reviewMode">—</b></div>
+          </div>
+        </section>
+      </section>
+
+      <section class="intel" id="intelligence">
+        <div class="section-head"><div><div class="eyebrow">// MULTI-VECTOR ANALYSIS</div><h2>Four layers. One accountable decision.</h2></div><p>Each signal is independent by design, so an operator can inspect the evidence behind a result instead of receiving an unexplained score.</p></div>
+        <div class="modules">
+          <article class="module" data-index="01"><div class="mod-icon">⌁</div><h3>Optical extraction</h3><p>Perspective, contrast, field zones and machine-readable text form a clean evidence layer.</p><span class="tech">OCR / MRZ / QR PAYLOAD</span></article>
+          <article class="module" data-index="02"><div class="mod-icon">⌘</div><h3>Logical integrity</h3><p>Formats, date relationships and document checksums catch internally inconsistent records.</p><span class="tech">REGEX / VERHOEFF / ICAO</span></article>
+          <article class="module" data-index="03"><div class="mod-icon">◌</div><h3>Visual forensics</h3><p>Compression variance and high-frequency edge residue highlight regions needing review.</p><span class="tech">ELA / LAPLACIAN / CMFD</span></article>
+          <article class="module" data-index="04"><div class="mod-icon">◉</div><h3>Biometric review</h3><p>Face-zone quality and liveness cues support a supervised 1:1 match decision.</p><span class="tech">EMBEDDING / LIVENESS / COSINE</span></article>
+        </div>
+      </section>
+
+      <section class="protocol" id="protocol">
+        <div class="section-head"><div><div class="eyebrow">// PROPOSAL-ALIGNED OPERATING MODEL</div><h2>Five stages. A human-owned outcome.</h2></div><p>Designed for checkpoint and field workflows: capture evidence once, triangulate the signals, then retain a concise audit trail for the reviewing officer.</p></div>
+        <div class="protocol-grid">
+          <article class="flow-panel"><div class="eyebrow">SCREENING LOOP</div><p>A practical implementation path drawn from the project proposal.</p><div class="flow"><div class="flow-step"><b>01 / CAPTURE</b><span>Image or document intake</span></div><div class="flow-step"><b>02 / EXTRACT</b><span>OCR, MRZ and field checks</span></div><div class="flow-step"><b>03 / FORENSICS</b><span>Tamper and metadata cues</span></div><div class="flow-step"><b>04 / BIOMETRICS</b><span>Face quality and match cue</span></div><div class="flow-step"><b>05 / DECIDE</b><span>Risk tier, review and audit</span></div></div></article>
+          <article class="decision-panel"><div class="eyebrow">RISK ESCALATION</div><p>Scores guide the officer; they never replace the officer.</p><div class="tiers"><div class="tier"><b>GREEN</b><span>Consistent signals. Continue with standard processing.</span></div><div class="tier yellow"><b>YELLOW</b><span>One or more anomalies. Request a focused human review.</span></div><div class="tier red"><b>RED</b><span>High-conflict signals. Escalate and preserve the audit record.</span></div></div></article>
+        </div>
+        <div class="prototype-note"><strong>PROTOTYPE SCOPE //</strong> This browser demo simulates risk signals and audit output. OCR, watchlist checks, tamper analysis and biometric matching become live only when connected to approved model services and authorised data sources.</div>
+      </section>
+    </main>
+
+    <footer class="shell" id="about"><div><strong>SENTINEL-X //</strong> AI-BASED FAKE IDENTITY &amp; DOCUMENT SCREENING</div><span>SIH CONCEPT PROTOTYPE · HUMAN REVIEW REQUIRED · v1.1.0</span></footer>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+      const fileInput = $("fileInput");
+      const dropZone = $("dropZone");
+      const terminal = $("terminal");
+      const state = { source: "DEMO_CREDENTIAL.TD3", width: 1280, height: 810, size: 0, score: null, status: "Awaiting scan", anomaly: null };
+      const barHeights = [26, 42, 19, 56, 33, 48, 21, 64, 37, 23, 46, 30, 59, 26, 41, 32, 51, 22, 45, 31];
+
+      function clock() {
+        const d = new Date();
+        $("clock").textContent = `UTC+05:30 — ${d.toLocaleTimeString("en-GB", { hour12: false })}`;
+      }
+      clock(); setInterval(clock, 1000);
+      $("sessionId").textContent = `SNTL-${Math.floor(1000 + Math.random() * 8999)}`;
+
+      function buildBars(heights = barHeights) {
+        $("bars").replaceChildren(...heights.map((height, i) => { const bar = document.createElement("i"); bar.style.height = `${height}%`; bar.style.opacity = `${.25 + (i % 4) * .16}`; return bar; }));
+      }
+      buildBars();
+      function log(message, kind = "") {
+        const p = document.createElement("p");
+        p.innerHTML = `<span class="${kind}">[${kind === "ok" ? "OK" : kind === "warn" ? "FLAG" : "SYS"}]</span> ${message}`;
+        p.style.animationDelay = `${Math.min(terminal.children.length, 8) * .03}s`;
+        terminal.append(p);
+        terminal.scrollTop = terminal.scrollHeight;
+      }
+      function setText(id, text) { $(id).textContent = text; }
+      function setState(id, text, style = "") { const el = $(id); el.textContent = text; el.className = `state ${style}`; }
+      function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+      function reset() {
+        state.source = "DEMO_CREDENTIAL.TD3"; state.width = 1280; state.height = 810; state.size = 0; state.score = null; state.anomaly = null; state.status = "Awaiting scan";
+        $("docImage").removeAttribute("src"); $("docPreview").classList.remove("has-image"); $("scanCanvas").classList.remove("analyzed");
+        $("sourceLabel").textContent = state.source; $("inputTag").textContent = "INPUT: SAMPLE"; $("resolutionTag").textContent = "VECTOR: IDLE"; $("commandText").textContent = "awaiting document payload"; $("hudState").textContent = "READY / STANDBY";
+        $("score").textContent = "--"; $("ring").style.setProperty("--value", 0); $("verdict").textContent = "AWAITING SCAN"; $("scoreCaption").textContent = "No evidence package loaded.";
+        ["ocrState", "mrzState", "elaState", "faceState"].forEach(id => setState(id, "IDLE")); $("chartState").textContent = "NO SIGNAL";
+        [["docType", "—"], ["imageProfile", "—"], ["checksum", "—"], ["anomaly", "—"], ["faceRegion", "—"], ["reviewMode", "—"]].forEach(([id, val]) => setText(id, val));
+        $("exportButton").disabled = true; $("saveButton").disabled = true; buildBars(); log("Evidence buffer cleared. Waiting for a new payload.", "");
+      }
+      function fileLabel(name) { return name.replace(/[^a-z0-9._-]/gi, "_").toUpperCase().slice(0, 26); }
+      function receiveFile(file) {
+        if (!file || !file.type.startsWith("image/")) { log("Rejected non-image evidence payload.", "warn"); return; }
+        const reader = new FileReader();
+        reader.onload = () => {
+          const image = new Image();
+          image.onload = () => {
+            state.source = fileLabel(file.name); state.width = image.naturalWidth; state.height = image.naturalHeight; state.size = file.size;
+            $("docImage").src = reader.result; $("docPreview").classList.add("has-image"); $("sourceLabel").textContent = state.source; $("inputTag").textContent = "INPUT: LOCAL"; $("resolutionTag").textContent = `${state.width}×${state.height}`; $("commandText").textContent = `payload mounted: ${state.source.toLowerCase()}`; $("hudState").textContent = "EVIDENCE LOADED / READY";
+            log(`Evidence payload mounted: ${state.source} (${(file.size / 1024).toFixed(1)} KB).`, "ok"); runAnalysis(false);
+          };
+          image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      }
+      async function runAnalysis(isSample = false) {
+        const panel = $("scannerPanel");
+        panel.classList.add("scanning"); $("scanCanvas").classList.remove("analyzed"); $("exportButton").disabled = true;
+        $("commandText").textContent = "pipeline active: normalizing evidence"; $("hudState").textContent = "SCANNING / 4 VECTORS";
+        ["ocrState", "mrzState", "elaState", "faceState"].forEach(id => setState(id, "RUNNING"));
+        log("Pre-flight check: image buffer normalized; local evidence locked.", "");
+        await wait(540);
+        setState("ocrState", "PASS", "pass"); setText("docType", isSample ? "TD3 / PASSPORT" : "IMAGE DOCUMENT"); setText("imageProfile", `${state.width} × ${state.height}`); log("Optical field zones isolated; text structure is reviewable.", "ok");
+        await wait(540);
+        setState("mrzState", isSample ? "PASS" : "REVIEW", isSample ? "pass" : "warn"); setText("checksum", isSample ? "ICAO 7-3-1 / VALID" : "NOT AVAILABLE"); log(isSample ? "MRZ check digit sequence reconciled." : "Machine-readable zone not confirmed; operator review advised.", isSample ? "ok" : "warn");
+        await wait(600);
+        const fingerprint = state.width * 13 + state.height * 7 + Math.round(state.size / 1000);
+        const anomaly = isSample ? 0.18 : Math.min(.78, .18 + (fingerprint % 48) / 100);
+        state.anomaly = anomaly;
+        const suspect = anomaly > .52;
+        setState("elaState", suspect ? "FLAG" : "CLEAR", suspect ? "warn" : "pass"); setText("anomaly", `${(anomaly * 100).toFixed(1)} / 100`); buildBars(barHeights.map((h, i) => Math.min(92, Math.max(13, h + ((fingerprint + i * 11) % 21) - 10)))); $("chartState").textContent = suspect ? "VARIANCE FLAGGED" : "STABLE VARIANCE"; log(suspect ? "Compression/edge variance exceeds review threshold." : "Compression residual remains within the demo review threshold.", suspect ? "warn" : "ok");
+        await wait(570);
+        setState("faceState", isSample ? "PASS" : "REVIEW", isSample ? "pass" : "warn"); setText("faceRegion", isSample ? "98.6% QUALITY" : "FACE CUE FOUND"); setText("reviewMode", "HUMAN-IN-LOOP");
+        const score = isSample ? 94 : Math.max(54, Math.min(91, Math.round(92 - anomaly * 40)));
+        state.score = score; state.status = score >= 80 ? "Verified" : score >= 65 ? "Review advised" : "Suspicious";
+        $("score").textContent = score; $("ring").style.setProperty("--value", score); $("verdict").textContent = state.status.toUpperCase(); $("verdict").style.color = score >= 80 ? "var(--green)" : score >= 65 ? "var(--amber)" : "var(--red)"; $("scoreCaption").textContent = score >= 80 ? "Signals align. Confirm identity with the holder." : "One or more signals require manual adjudication.";
+        $("commandText").textContent = `decision ready: trust score ${score}/100`; $("hudState").textContent = "SCAN COMPLETE / REVIEW READY"; $("scanCanvas").classList.add("analyzed"); $("exportButton").disabled = false; $("saveButton").disabled = false; panel.classList.remove("scanning"); log(`Composite trust score computed: ${score}/100 — ${state.status}.`, score >= 80 ? "ok" : "warn");
+      }
+      $("sampleButton").addEventListener("click", () => { state.source = "DEMO_CREDENTIAL.TD3"; state.width = 1280; state.height = 810; state.size = 0; $("docPreview").classList.remove("has-image"); $("sourceLabel").textContent = state.source; $("inputTag").textContent = "INPUT: SAMPLE"; $("resolutionTag").textContent = "1280×810"; log("Synthetic safe demo credential injected into viewport.", "ok"); runAnalysis(true); });
+      fileInput.addEventListener("change", event => receiveFile(event.target.files[0]));
+      ["dragenter", "dragover"].forEach(type => dropZone.addEventListener(type, event => { event.preventDefault(); dropZone.classList.add("drag"); }));
+      ["dragleave", "drop"].forEach(type => dropZone.addEventListener(type, event => { event.preventDefault(); dropZone.classList.remove("drag"); }));
+      dropZone.addEventListener("drop", event => receiveFile(event.dataTransfer.files[0]));
+      $("clearButton").addEventListener("click", reset);
+      $("saveButton").addEventListener("click", async () => {
+        if (state.score === null || state.anomaly === null) return;
+        const saveButton = $("saveButton");
+        const riskLevel = state.score >= 80 ? "GREEN" : state.score >= 65 ? "YELLOW" : "RED";
+        const payload = {
+          sessionId: $("sessionId").textContent,
+          sourceType: $("inputTag").textContent === "INPUT: SAMPLE" ? "SAMPLE" : "LOCAL",
+          documentType: $("docType").textContent,
+          imageWidth: state.width,
+          imageHeight: state.height,
+          trustScore: state.score,
+          verdict: state.status,
+          riskLevel,
+          anomalyIndex: state.anomaly,
+          auditVersion: "1.1.0"
+        };
+        saveButton.disabled = true; saveButton.textContent = "SAVING AUDIT…";
+        try {
+          const response = await fetch("/api/audits", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.error || "Database request failed");
+          $("hudState").textContent = "AUDIT SAVED / REVIEW READY";
+          log(`Audit ${result.auditId} saved to the protected Supabase record store.`, "ok");
+        } catch (error) {
+          log(`Audit not saved: ${error.message}. Configure Supabase connection variables to enable persistence.`, "warn");
+        } finally {
+          saveButton.textContent = "SAVE AUDIT TO DATABASE"; saveButton.disabled = false;
+        }
+      });
+      $("exportButton").addEventListener("click", () => {
+        const audit = { product: "SENTINEL-X", generatedAt: new Date().toISOString(), session: $("sessionId").textContent, source: state.source, image: `${state.width}x${state.height}`, trustScore: state.score, verdict: state.status, anomalyIndex: state.anomaly, note: "Prototype review aid only. A trained human must make the final decision." };
+        const blob = new Blob([JSON.stringify(audit, null, 2)], { type: "application/json" }); const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = `sentinel-audit-${$("sessionId").textContent.toLowerCase()}.json`; link.click(); URL.revokeObjectURL(link.href); log("Portable audit record prepared for export.", "ok");
+      });
+    </script>
+  </body>
+</html>
+
